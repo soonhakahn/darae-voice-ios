@@ -228,13 +228,27 @@ struct ContentView: View {
                                 lastResponse = "가능한 명령: 시장 브리핑 읽어줘 / 프리마켓 읽어줘 / 도움말"
                                 tts.speak(lastResponse)
                             }
+
+                            Button("TTS 테스트") {
+                                lastResponse = "TTS 테스트입니다. 소리가 들리면 정상입니다."
+                                tts.speak(lastResponse)
+                            }
                         }
                         .buttonStyle(.bordered)
                     }
                 }
 
-                Toggle("TTS는 요약만 읽기(빠르게)", isOn: $speakSummaryOnly)
-                    .font(.subheadline)
+                HStack {
+                    Toggle("TTS는 요약만 읽기(빠르게)", isOn: $speakSummaryOnly)
+                        .font(.subheadline)
+
+                    Spacer()
+
+                    Button("읽기 중단") {
+                        tts.stop(immediately: true)
+                    }
+                    .buttonStyle(.bordered)
+                }
 
                 // Response
                 GroupBox("Response") {
