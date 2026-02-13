@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - UI Components
 
@@ -143,6 +144,19 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HeaderBanner()
 
+                // One-time autofill: if token/URL is empty, try build-time defaults from Info.plist.
+                // This avoids re-typing after reinstall while still not committing secrets to GitHub.
+                .task {
+                    if serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        let t = AppConfig.defaultToken
+                        if !t.isEmpty { serverToken = t }
+                    }
+                    if serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        let u = AppConfig.defaultBaseURL
+                        if !u.isEmpty { serverBaseURL = u }
+                    }
+                }
+
                 // Status pills
                 HStack(spacing: 10) {
                     InfoPill(icon: tokenEmpty ? "exclamationmark.triangle.fill" : "checkmark.seal.fill",
@@ -243,6 +257,12 @@ struct ContentView: View {
                         SecureField("Token (required)", text: $serverToken)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+
+                        Button("클립보드에서 Token 붙여넣기") {
+                            let pasted = UIPasteboard.general.string ?? ""
+                            serverToken = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        .buttonStyle(.bordered)
 
                         if tokenEmpty {
                             Text("⚠️ Token이 비어있습니다. 서버 토큰을 입력해야 리포트를 가져올 수 있어요.")
