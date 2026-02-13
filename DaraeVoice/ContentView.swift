@@ -54,11 +54,25 @@ struct ContentView: View {
                 HeaderBanner()
 
                 GroupBox("Server") {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 10) {
                         TextField("Base URL (e.g. http://192.168.0.10:18795)", text: $serverBaseURL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                        SecureField("Token", text: $serverToken)
+                            .textContentType(.URL)
+
+                        SecureField("Token (required)", text: $serverToken)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        if serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("⚠️ Token이 비어있습니다. 서버 토큰을 입력해야 리포트를 가져올 수 있어요.")
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        } else {
+                            Text("Token 저장됨")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -103,9 +117,13 @@ struct ContentView: View {
                     Button("시장 브리핑") {
                         Task { await readReport(.marketBriefLatest, title: "시장 브리핑") }
                     }
+                    .disabled(serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
                     Button("프리마켓") {
                         Task { await readReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
                     }
+                    .disabled(serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
                     Button("도움말") {
                         lastResponse = "가능한 명령: 시장 브리핑 읽어줘 / 프리마켓 읽어줘 / 도움말"
                         tts.speak(lastResponse)
