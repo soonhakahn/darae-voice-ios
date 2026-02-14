@@ -138,6 +138,9 @@ struct ContentView: View {
     @State private var speakSummaryOnly: Bool = true
     @State private var showSettings: Bool = false
 
+    @State private var showIntradayRequestSheet: Bool = false
+    @AppStorage("darae.intradayRequestText") private var intradayRequestText: String = "다래 장중 업데이트 요청: (원하는 포인트를 적어주세요)"
+
     private var tokenEmpty: Bool {
         serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -196,12 +199,12 @@ struct ContentView: View {
 
                 ActionCard(
                     title: "장중 업데이트 요청(텔레그램)",
-                    subtitle: "버튼을 누르면 텔레그램 공유 화면이 열리고, 메시지를 내 DM으로 전송하면 됩니다.",
+                    subtitle: "요청 문구를 작성한 뒤 텔레그램 공유 화면으로 보냅니다.",
                     icon: "paperplane.fill",
                     tint: .purple,
                     disabled: false
                 ) {
-                    openTelegramShare(text: "다래 장중 업데이트 요청")
+                    showIntradayRequestSheet = true
                 }
 
                 // Optional local mode (LAN only)
@@ -348,6 +351,57 @@ struct ContentView: View {
                 Spacer(minLength: 16)
             }
             .padding()
+        }
+        .sheet(isPresented: $showIntradayRequestSheet) {
+            NavigationView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("장중 업데이트 요청 문구")
+                        .font(.headline)
+
+                    TextEditor(text: $intradayRequestText)
+                        .font(.body)
+                        .frame(minHeight: 140)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                        )
+
+                    HStack {
+                        Button("기본") {
+                            intradayRequestText = "다래 장중 업데이트 요청: 코스피/코스닥, 원달러, 반도체(삼성전자/하이닉스) 중심으로 5줄 요약 부탁." 
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("반도체") {
+                            intradayRequestText = "다래 장중 업데이트 요청: 반도체(삼성전자/하이닉스) 수급/흐름 + SOXX/NVDA 영향 5줄." 
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("지수") {
+                            intradayRequestText = "다래 장중 업데이트 요청: 코스피/코스닥 지수 흐름, 주도 테마, 상위 대형주 체크 5줄." 
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Spacer()
+
+                    HStack {
+                        Button("취소") { showIntradayRequestSheet = false }
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button("텔레그램으로 보내기") {
+                            showIntradayRequestSheet = false
+                            openTelegramShare(text: intradayRequestText)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+                .padding()
+                .navigationTitle("장중 요청")
+                .navigationBarTitleDisplayMode(.inline)
+            }
         }
     }
 
