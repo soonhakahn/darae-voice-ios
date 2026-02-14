@@ -130,6 +130,9 @@ struct ContentView: View {
     @AppStorage("darae.serverBaseURL") private var serverBaseURL: String = "http://172.30.1.66:18795"
     @AppStorage("darae.serverToken") private var serverToken: String = ""
 
+    // Public GitHub raw base (no auth).
+    @AppStorage("darae.githubRawBase") private var githubRawBase: String = "https://raw.githubusercontent.com/soonhakahn/darae-reports/main"
+
     @State private var lastResponse: String = ""
     @State private var isAuthed: Bool = false
     @State private var speakSummaryOnly: Bool = true
@@ -172,8 +175,8 @@ struct ContentView: View {
 
                 // Primary actions (dashboard cards)
                 ActionCard(
-                    title: "시장 브리핑",
-                    subtitle: "오늘 지표/체크포인트를 읽어드립니다.",
+                    title: "시장 브리핑 (로컬)",
+                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
                     icon: "newspaper.fill",
                     tint: .indigo,
                     disabled: tokenEmpty
@@ -182,13 +185,33 @@ struct ContentView: View {
                 }
 
                 ActionCard(
-                    title: "US→KR 프리마켓",
-                    subtitle: "미국/반도체/AI 흐름 기반 프리뷰.",
+                    title: "US→KR 프리마켓 (로컬)",
+                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
                     icon: "globe.asia.australia.fill",
                     tint: .orange,
                     disabled: tokenEmpty
                 ) {
                     Task { await readReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
+                }
+
+                ActionCard(
+                    title: "시장 브리핑 (GitHub)",
+                    subtitle: "어디서나: GitHub 최신본을 가져옵니다.",
+                    icon: "tray.and.arrow.down.fill",
+                    tint: .blue,
+                    disabled: false
+                ) {
+                    Task { await readGitHubReport(.marketBriefLatest, title: "시장 브리핑") }
+                }
+
+                ActionCard(
+                    title: "US→KR 프리마켓 (GitHub)",
+                    subtitle: "어디서나: GitHub 최신본을 가져옵니다.",
+                    icon: "tray.and.arrow.down.fill",
+                    tint: .teal,
+                    disabled: false
+                ) {
+                    Task { await readGitHubReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
                 }
 
                 // Voice controls
@@ -288,12 +311,21 @@ struct ContentView: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        Button("/health 테스트") {
-                            Task {
-                                await testHealth()
-                            }
+                        Button("/health 테스트(로컬)") {
+                            Task { await testHealth() }
                         }
                         .buttonStyle(.bordered)
+
+                        TextField("GitHub Raw Base (public)", text: $githubRawBase)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .font(.footnote)
+                            .textContentType(.URL)
+                            .padding(.top, 4)
+
+                        Text("예: https://raw.githubusercontent.com/soonhakahn/darae-reports/main")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.top, 8)
                 } label: {
@@ -343,7 +375,7 @@ struct ContentView: View {
 
     private func readReport(_ endpoint: ReportClient.Endpoint, title: String) async {
         if tokenEmpty {
-            lastResponse = "Token이 비어있습니다. 설정에서 Token을 입력해 주세요."
+            lastResponse = "Token이 비어있습니다. 설정에서 Token을 입력해 주세요. (로컬 서버용)"
             tts.speak(lastResponse)
             return
         }
@@ -390,6 +422,31 @@ struct ContentView: View {
             lastResponse = "Health: \(String(decoding: data, as: UTF8.self))"
         } catch {
             lastResponse = "Health check failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func readGitHubReport(_ endpoint: GitHubReportsClient.Endpoint, title: String) async {
+        guard let base = URL(string: githubRawBase) else {
+            lastResponse = "Invalid GitHub Raw Base URL"
+            tts.speak(lastResponse)
+            return
+        }
+        let client = GitHubReportsClient(baseRawURL: base)
+
+        do {
+            let text = try await client.fetch(endpoint)
+            lastResponse = "[\(title) · GitHub]\n\n" + text
+
+            let speakText: String
+            if speakSummaryOnly {
+                speakText = String(lastResponse.prefix(1400))
+            } else {
+                speakText = String(lastResponse.prefix(4000))
+            }
+            tts.speak(speakText)
+        } catch {
+            lastResponse = "Failed to fetch \(title) from GitHub: \(error.localizedDescription)"
+            tts.speak(lastResponse)
         }
     }
 
