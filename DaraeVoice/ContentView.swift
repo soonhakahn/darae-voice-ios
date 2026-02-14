@@ -175,26 +175,6 @@ struct ContentView: View {
 
                 // Primary actions (dashboard cards)
                 ActionCard(
-                    title: "시장 브리핑 (로컬)",
-                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
-                    icon: "newspaper.fill",
-                    tint: .indigo,
-                    disabled: tokenEmpty
-                ) {
-                    Task { await readReport(.marketBriefLatest, title: "시장 브리핑") }
-                }
-
-                ActionCard(
-                    title: "US→KR 프리마켓 (로컬)",
-                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
-                    icon: "globe.asia.australia.fill",
-                    tint: .orange,
-                    disabled: tokenEmpty
-                ) {
-                    Task { await readReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
-                }
-
-                ActionCard(
                     title: "시장 브리핑 (GitHub)",
                     subtitle: "어디서나: GitHub 최신본을 가져옵니다.",
                     icon: "tray.and.arrow.down.fill",
@@ -212,6 +192,37 @@ struct ContentView: View {
                     disabled: false
                 ) {
                     Task { await readGitHubReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
+                }
+
+                ActionCard(
+                    title: "장중 업데이트 요청(텔레그램)",
+                    subtitle: "버튼을 누르면 텔레그램 공유 화면이 열리고, 메시지를 내 DM으로 전송하면 됩니다.",
+                    icon: "paperplane.fill",
+                    tint: .purple,
+                    disabled: false
+                ) {
+                    openTelegramShare(text: "다래 장중 업데이트 요청")
+                }
+
+                // Optional local mode (LAN only)
+                ActionCard(
+                    title: "시장 브리핑 (로컬)",
+                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
+                    icon: "newspaper.fill",
+                    tint: .indigo,
+                    disabled: tokenEmpty
+                ) {
+                    Task { await readReport(.marketBriefLatest, title: "시장 브리핑") }
+                }
+
+                ActionCard(
+                    title: "US→KR 프리마켓 (로컬)",
+                    subtitle: "맥 서버에서 읽어옵니다(LAN 필요).",
+                    icon: "globe.asia.australia.fill",
+                    tint: .orange,
+                    disabled: tokenEmpty
+                ) {
+                    Task { await readReport(.us2krLatest, title: "US→KR 프리마켓 리포트") }
                 }
 
                 // Voice controls
@@ -453,5 +464,17 @@ struct ContentView: View {
     private func shortServerHost() -> String {
         guard let u = URL(string: serverBaseURL) else { return "(invalid)" }
         return [u.host ?? "?", u.port.map(String.init)].compactMap { $0 }.joined(separator: ":")
+    }
+
+    private func openTelegramShare(text: String) {
+        // Opens Telegram share UI (works even without knowing the user's chat id).
+        // The user can pick "Saved Messages" or their own DM.
+        let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "https://t.me/share/url?text=\(encoded)"
+        guard let url = URL(string: urlString) else {
+            lastResponse = "Failed to open Telegram share."
+            return
+        }
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
 }
