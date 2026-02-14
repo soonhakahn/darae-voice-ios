@@ -139,7 +139,7 @@ struct ContentView: View {
     @State private var showSettings: Bool = false
 
     @State private var showIntradayRequestSheet: Bool = false
-    @AppStorage("darae.intradayRequestText") private var intradayRequestText: String = "다래 장중 업데이트 요청: (원하는 포인트를 적어주세요)"
+    @AppStorage("darae.intradayRequestText") private var intradayRequestText: String = ""
 
     private var tokenEmpty: Bool {
         serverToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -358,27 +358,45 @@ struct ContentView: View {
                     Text("장중 업데이트 요청 문구")
                         .font(.headline)
 
-                    TextEditor(text: $intradayRequestText)
-                        .font(.body)
-                        .frame(minHeight: 140)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.gray.opacity(0.25), lineWidth: 1)
-                        )
+                    ZStack(alignment: .topLeading) {
+                        if intradayRequestText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("예) 코스피/코스닥, 원달러, 반도체 중심으로 5줄 요약 부탁")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 10)
+                                .padding(.leading, 6)
+                        }
 
-                    HStack {
+                        TextEditor(text: $intradayRequestText)
+                            .font(.body)
+                            .frame(minHeight: 140)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                    )
+
+                    Text("프리셋")
+                        .font(.subheadline).bold()
+
+                    // Preset chips
+                    HStack(spacing: 8) {
                         Button("기본") {
-                            intradayRequestText = "다래 장중 업데이트 요청: 코스피/코스닥, 원달러, 반도체(삼성전자/하이닉스) 중심으로 5줄 요약 부탁." 
+                            intradayRequestText = "코스피/코스닥, 원달러, 반도체(삼성전자/하이닉스) 중심으로 5줄 요약 부탁."
                         }
                         .buttonStyle(.bordered)
 
                         Button("반도체") {
-                            intradayRequestText = "다래 장중 업데이트 요청: 반도체(삼성전자/하이닉스) 수급/흐름 + SOXX/NVDA 영향 5줄." 
+                            intradayRequestText = "반도체(삼성전자/하이닉스) 수급/흐름 + SOXX/NVDA 영향 5줄."
                         }
                         .buttonStyle(.bordered)
 
                         Button("지수") {
-                            intradayRequestText = "다래 장중 업데이트 요청: 코스피/코스닥 지수 흐름, 주도 테마, 상위 대형주 체크 5줄." 
+                            intradayRequestText = "코스피/코스닥 지수 흐름, 주도 테마, 상위 대형주 체크 5줄."
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("비우기") {
+                            intradayRequestText = ""
                         }
                         .buttonStyle(.bordered)
                     }
@@ -391,9 +409,11 @@ struct ContentView: View {
 
                         Spacer()
 
-                        Button("텔레그램으로 보내기") {
+                        Button("Open") {
+                            // Open Telegram share with current text (can be empty; user may type in Telegram).
+                            let msg = intradayRequestText.trimmingCharacters(in: .whitespacesAndNewlines)
                             showIntradayRequestSheet = false
-                            openTelegramShare(text: intradayRequestText)
+                            openTelegramShare(text: msg.isEmpty ? "다래 장중 업데이트 요청" : "다래 장중 업데이트 요청: \(msg)")
                         }
                         .buttonStyle(.borderedProminent)
                     }
